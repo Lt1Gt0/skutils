@@ -6,33 +6,29 @@ LOG_DIR = logs
 
 #Compiler and linker things
 CC = g++
-CCFLAGS = -c
+CCFLAGS = -g -Wall -Wextra --std=c++17
 
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 #Essential files and groups
-OBJ = libflagparse.o
-LIB = libflagparse.a
-
+OBJ = flag-parser-test 
 SRCS = $(call rwildcard, $(SRC_DIR), *.cpp)
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
-all: $(LIB)
+all: $(OBJ) 
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p $(@D)
 	@echo ---- Generating $^ ---
 
-$(LIB): $(OBJ)
-	@ar rcs $(LIB) $(OBJ)
-
 $(OBJ): $(OBJS)
-	# @mkdir -p $(@D)
-	# $(CC) $(CCFLAGS) $^ -o $@
+	@echo ---- Linking $^ ----
+	@mkdir -p $(@D)
+	$(CC) $(NCURSES) $^ -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo ---- Compiling $^ ----
 	@mkdir -p $(@D)
-	$(CC) $(CCFLAGS) $(INCLUDE) $< -o $@
+	$(CC) $(CCFLAGS) $(INCLUDE) -c $< -o $@
 
 clean:
 	rm $(OBJ)
