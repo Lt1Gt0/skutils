@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef _SKUTIL_FLAG_PARSER_HPP
 #define _SKUTIL_FLAG_PARSER_HPP
 
@@ -77,7 +76,7 @@ namespace SKUTIL
 					}
 
 					if (remove) {
-						mFlags->erase(index);
+						// mFlags->erase(index);
 					}
 				}
 			}
