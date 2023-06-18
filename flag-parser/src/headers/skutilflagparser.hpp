@@ -37,15 +37,6 @@ namespace SKUTIL
 		const char* mDescription;
 		OPT skutils_flag_param_func_ mFunction;
 
-		Flag& operator=(const Flag& other)
-		{
-			this->mShortIdentifier = other.mShortIdentifier;
-			this->mLongIdentifier= other.mLongIdentifier;
-			this->mDescription = other.mDescription;
-			this->mFunction = other.mFunction;
-			return *this;
-		}
-
 		bool operator==(const Flag& other)
 		{
 			if (mShortIdentifier == other.mShortIdentifier ||
@@ -83,21 +74,33 @@ namespace SKUTIL
 
 			void ParseFlags(int argc, char** argv) 
 			{
-				for (int i = 0; i < argc; i++) {
-					// std::cout << argv[i] << "\n";
-					Flag f = {};
+				for (int i = 1; i < argc; i++) {
+					Flag f = NULL_FLAG;
 					if (std::strncmp(argv[i], LONG_FLAG_DELIM, 2) == 0) {
-						char* arg = new char[sizeof(argv[i])];
-						std::memcpy(arg, argv[i] + 2, sizeof(arg - 2));
+						char* arg = new char[sizeof(argv[i]) - 2];
+
+						// Strip the delimiter
+						size_t idx = 0;
+						while (idx <= sizeof(arg)) {
+							arg[idx] = argv[i][idx + 2];
+							idx++;
+						}
+
+						std::cout << arg << "\n";
 						FindFlag(NULL_FLAG.mShortIdentifier, arg, &f);
 					} else if (std::strncmp(argv[i], SHORT_FLAG_DELIM, 1) == 0) {
-						SHORT_FLAG arg = (char)((*argv[i]) + 1);
+						// Strip the delimiter
+						SHORT_FLAG arg = (char)(*(argv[i] + 1));
+						std::cout << arg << "\n";
 						FindFlag(arg, NULL_FLAG.mLongIdentifier, &f);
 					}
 
 					// If the flag is not null call its function
-					if (f != NULL_FLAG)
-						f.mFunction();
+					if (f == NULL_FLAG)
+						return;
+
+					std::cout << "Valid\n";
+					f.mFunction();
 				}
 			}
 
@@ -149,9 +152,10 @@ namespace SKUTIL
 					std::strcmp(longhand, NULL_FLAG.mLongIdentifier) == 0)
 					return;
 
+
 				for (Flag f : *mAllFlags) {
 					if (shorthand == f.mShortIdentifier ||
-						longhand == f.mLongIdentifier) {
+						strcmp(longhand, f.mLongIdentifier) == 0) {
 						*outFlag = f;
 					}
 				}	
