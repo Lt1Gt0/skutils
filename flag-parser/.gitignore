@@ -1,0 +1,6 @@
+.cache/
+obj/
+
+.gdb_history
+compile_commands.json
+flag-parser-test
