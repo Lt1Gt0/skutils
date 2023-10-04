@@ -29,6 +29,30 @@ namespace SKUTIL
 		typedef void (*skutils_flag_param_func_)(...);
 	#endif
 
+	inline void RemoveNullStrs(int initCount, char** buf, char*** outBuf)
+	{
+		auto nullptrCount = [&]() -> int {
+			int count = 0;
+			
+			for (int i = 0; i < initCount; i++) {
+				if (buf[i] == nullptr)
+					count++;	
+			}
+
+			return count;
+		};
+
+		*outBuf = new char*[initCount - nullptrCount()];
+		std::cout << "Nullptr Count - " << nullptrCount() << std::endl;
+		return;
+
+		for (int idx = 0, c = 0; c < initCount - nullptrCount(); idx++) {
+			if (buf[idx] != nullptr) {
+				*outBuf[c] = buf[idx];
+				c++;
+			}
+		}
+	}
 
 	struct Flag
 	{
@@ -74,6 +98,7 @@ namespace SKUTIL
 
 			void ParseFlags(int argc, char** argv) 
 			{
+				int flagCount = 0;
 				for (int i = 1; i < argc; i++) {
 					Flag f = NULL_FLAG;
 					if (std::strncmp(argv[i], LONG_FLAG_DELIM, 2) == 0) {
@@ -86,12 +111,10 @@ namespace SKUTIL
 							idx++;
 						}
 
-						std::cout << arg << "\n";
 						FindFlag(NULL_FLAG.mShortIdentifier, arg, &f);
 					} else if (std::strncmp(argv[i], SHORT_FLAG_DELIM, 1) == 0) {
 						// Strip the delimiter
 						SHORT_FLAG arg = (char)(*(argv[i] + 1));
-						std::cout << arg << "\n";
 						FindFlag(arg, NULL_FLAG.mLongIdentifier, &f);
 					}
 
@@ -99,9 +122,13 @@ namespace SKUTIL
 					if (f == NULL_FLAG)
 						return;
 
-					std::cout << "Valid\n";
 					f.mFunction();
+					argv[i] = nullptr;
+					flagCount++;
 				}
+
+				char** tmp = nullptr;
+				RemoveNullStrs(argc, argv, &tmp);
 			}
 
 			~FlagParser()
@@ -127,7 +154,7 @@ namespace SKUTIL
 					return;
 
 				bool remove;
-				size_t index;
+				// size_t index;
 				for (Flag res : RESV) {
 					remove = false;
 					for (size_t i = 0; i < mAllFlags->size(); i++) {
@@ -135,7 +162,7 @@ namespace SKUTIL
 							res.mLongIdentifier == mAllFlags->at(i).mLongIdentifier) {
 							std::cerr << "Flag Was already reserved: " << "Short -> " << res.mShortIdentifier << std::endl;
 							remove = true;
-							index = i;
+							// index = i;
 						}
 					}
 
