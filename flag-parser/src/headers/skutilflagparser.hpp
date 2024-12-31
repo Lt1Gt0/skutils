@@ -25,8 +25,15 @@ namespace SKUTIL
  		#define OPT [[maybe_unused]]
 	#endif 
 
+    // Do keep in mind that count represents the amount of values that the flag
+    // expects, for now it is hardcoded to only accept 1 value since my library
+    // does not support functionality for multiple values
+    //
+    // Type information about the value will also be handled by the user in this
+    // function since each flag might ask for a different type such as a string,
+    // int, double, ect...
 	#ifndef SKUTIL_FLAG_PARAM_LIST
-		typedef void (*skutils_flag_param_func_)(...);
+		typedef void (*skutils_flag_param_func_)(int count, ...);
 	#endif
 
 	inline void RemoveNullStrs(int initCount, char** buf, char*** outBuf)
@@ -122,7 +129,18 @@ namespace SKUTIL
 					if (f == NULL_FLAG)
 						return;
 
-					f.mFunction();
+                    // IMPORTANT
+                    // right now, each flag assums only one argument will be passed
+                    // which means only one value can be associated to each flag and
+                    // cannot be specified otherwise, for example
+                    //
+                    // ./[app-name] -a 1 <- This works since flag 'a' only accepts value [1]
+                    // ./[app-name] -a 1 2 <- Does not work since flag 'a' is followed by [1] and [2]
+                    //
+                    // I would like to add this as a feature in the future to make the flag
+                    // parse more useful in a variety of use cases
+                    constexpr int ACCEPTABLE_FLAG_VALUE_COUNT {1};
+					f.mFunction(ACCEPTABLE_FLAG_VALUE_COUNT);
 					argv[i] = nullptr;
 					flagCount++;
 				}
@@ -137,13 +155,18 @@ namespace SKUTIL
 			}
 
 		private:
+            static void ShowHelp(OPT int count, ...)
+            {
+                std::cout << "Help\n";
+            }
+
 			SK_VEC<Flag> RESV = SK_VEC<Flag> {
 				NULL_FLAG,
 				{
 					'h',
 					"help",
 					"Show help commands",
-					nullptr
+				    ShowHelp	
 				},
 			};
 
