@@ -36,6 +36,15 @@ namespace SKUTIL
 		typedef void (*skutils_flag_param_func_)(int count, ...);
 	#endif
 
+	/*
+	 * Remove any nullptr values from a char buffer
+	 *
+	 * @param initCount (int): initial count of values that [buf] contains
+	 * @param buf (char**): buffer to check for nullptrs
+	 * @param outBuf(char**): Output buffer
+	 *
+	 * @returns: NONE
+	 */  
 	inline void RemoveNullStrs(int initCount, char** buf, char*** outBuf)
 	{
 		auto nullptrCount = [&]() -> int {
@@ -49,11 +58,13 @@ namespace SKUTIL
 			return count;
 		};
 
-		*outBuf = new char*[initCount - nullptrCount()];
-		std::cout << "Nullptr Count - " << nullptrCount() << std::endl;
-		return;
+		// Set the size of the output buffer to the [buf] size minus the amount of nullptrs found
+		int outBufSize = initCount - nullptrCount();
+		*outBuf = new char*[outBufSize];
+		// std::cout << "Nullptr Count - " << nullptrCount() << std::endl;
+		// return;
 
-		for (int idx = 0, c = 0; c < initCount - nullptrCount(); idx++) {
+		for (int idx = 0, c = 0; c < outBufSize; idx++) {
 			if (buf[idx] != nullptr) {
 				*outBuf[c] = buf[idx];
 				c++;
@@ -100,7 +111,15 @@ namespace SKUTIL
 			FlagParser(SK_VEC<Flag>* _flags)
 			{
 				mAllFlags = _flags;
+
+				// Check if any flags passed were reserved
 				CheckForReserved();
+
+				// After all custom flags have been added
+				// append the reserve flags to mAllFlags
+				for (size_t flagIdx = 0; flagIdx < RESV.size(); flagIdx++) {
+					mAllFlags->push_back(RESV[flagIdx]);
+				}
 			}
 
 			void ParseFlags(int argc, char** argv) 
@@ -127,7 +146,7 @@ namespace SKUTIL
 
 					// If the flag is not null call its function
 					if (f == NULL_FLAG)
-						return;
+						continue;
 
                     // IMPORTANT
                     // right now, each flag assums only one argument will be passed
@@ -166,7 +185,7 @@ namespace SKUTIL
 					'h',
 					"help",
 					"Show help commands",
-				    ShowHelp	
+				    ShowHelp
 				},
 			};
 
