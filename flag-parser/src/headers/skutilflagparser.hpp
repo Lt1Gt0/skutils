@@ -107,7 +107,6 @@ namespace SKUTIL
 		public:
 			SK_VEC<Flag>* mAllFlags;
 			SK_VEC<Flag>* mSetFlags;
-
 			FlagParser(SK_VEC<Flag>* _flags)
 			{
 				mAllFlags = _flags;
@@ -164,8 +163,13 @@ namespace SKUTIL
 					flagCount++;
 				}
 
-				char** tmp = nullptr;
-				RemoveNullStrs(argc, argv, &tmp);
+				// FIXME
+				// RemoveNullStrs is broken at the moment but does not effect
+				// the runtime of the code in current test cases so I will leave it commented out
+				// for the time being 
+				//
+				// char** tmp = nullptr;
+				// RemoveNullStrs(argc, argv, &tmp);
 			}
 
 			~FlagParser()
@@ -190,13 +194,14 @@ namespace SKUTIL
 			};
 
 			// TODO: Optimize this method further
+			// Does not currently remove the flag from the list if it was
+			// marked as reserve flag yet
 			void CheckForReserved()
 			{
 				if (mAllFlags->empty())
 					return;
 
 				bool remove;
-				// size_t index;
 				for (Flag res : RESV) {
 					remove = false;
 					for (size_t i = 0; i < mAllFlags->size(); i++) {
@@ -226,6 +231,8 @@ namespace SKUTIL
 					if (shorthand == f.mShortIdentifier ||
 						strcmp(longhand, f.mLongIdentifier) == 0) {
 						*outFlag = f;
+
+						return;
 					}
 				}	
 			}
