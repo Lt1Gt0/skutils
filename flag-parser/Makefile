@@ -47,9 +47,13 @@ setup:
 	@mkdir -p $(LOG_DIR)
 
 .PHONY: all
-all: $(LIB)
+all: clean obj
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p $(@D)
+	@echo ---- Generating $^ ---
+
+.PHONY: lib
+obj: $(OBJ)
 	@echo ---- Generating $^ ---
 
 $(LIB): $(OBJ)

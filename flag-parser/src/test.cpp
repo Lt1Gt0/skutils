@@ -3,17 +3,13 @@
 #include <iostream>
 #include <cstdarg>
 
-void testFunc(int count, ...)
+void testFunc(OPT int inputCount, OPT char** inputVals)
 {
-	std::cout << "This is from a custom flag" << std::endl;
+	std::cout << "Input Count: " << inputCount << std::endl;
 
-    // std::va_list list;
-    // va_start(list, count);
-    // std::cout << count << std::endl;
-
-    // // std::cout << va_arg(list, char*) << std::endl;
-
-    // va_end(list);
+	for (int i = 0; i < inputCount; i++) {
+		std::cout << inputVals[i] << "\n";
+	}
 }
 
 int main(int argc, char** argv) 
@@ -24,7 +20,8 @@ int main(int argc, char** argv)
 			't',
 			"test",
 			"Test function",
-			testFunc
+			2,
+			testFunc,
 		},
 	};
 

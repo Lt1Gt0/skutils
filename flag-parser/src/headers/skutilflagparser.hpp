@@ -25,15 +25,17 @@ namespace SKUTIL
  		#define OPT [[maybe_unused]]
 	#endif 
 
-    // Do keep in mind that count represents the amount of values that the flag
-    // expects, for now it is hardcoded to only accept 1 value since my library
-    // does not support functionality for multiple values
-    //
-    // Type information about the value will also be handled by the user in this
-    // function since each flag might ask for a different type such as a string,
-    // int, double, ect...
-	#ifndef SKUTIL_FLAG_PARAM_LIST
-		typedef void (*skutils_flag_param_func_)(int count, ...);
+	#ifndef SKUTIL_FLAG_PARAM_FUNC
+		typedef void (*skutils_flag_param_func_)(OPT int inputCount, OPT char** inputVals);
+	#endif
+	
+	// This is the maximum size of the allowable input length that can be given to a flag
+	// so if the program was run as follows
+	// ./[program] -f [input] [input]
+	//
+	// Each of the [input] values cannot exceed 1024 in length
+	#ifndef SKUTIL_FLAG_VALUE_MAX_BUF_SIZE
+		constexpr int SKUTIL_FLAG_VALUE_MAX_BUF_SIZE {1024};
 	#endif
 
 	/*
@@ -74,32 +76,43 @@ namespace SKUTIL
 
 	struct Flag
 	{
-		SHORT_FLAG mShortIdentifier;
-		LONG_FLAG mLongIdentifier;
-		const char* mDescription;
-		OPT skutils_flag_param_func_ mFunction;
+		public:
+			SHORT_FLAG mShortIdentifier;
+			LONG_FLAG mLongIdentifier;
+			const char* mDescription;
 
-		bool operator==(const Flag& other)
-		{
-			if (mShortIdentifier == other.mShortIdentifier ||
-				std::strcmp(mLongIdentifier, other.mLongIdentifier) == 0)
-				return true;
+			// The amount of expected values (or inputs) to be give to the flag delimited by a space
+			// If the flag has [mExpectedValueCount] set to 2 for example a valid use of the flag is as follows
+			//
+			// ./[program] -f 1 2
+			//
+			// Where -f is the flag and it expects 2 values to follow it
+			int mExpectedValueCount;
 
-			return false;
-		}
+			OPT skutils_flag_param_func_ mFunction;
+			OPT char** mInputValues = nullptr;
 
-		bool operator!=(const Flag& other)
-		{
-			if (mShortIdentifier != other.mShortIdentifier &&
-				std::strcmp(mLongIdentifier, other.mLongIdentifier) != 0)
-				return true;
+			bool operator==(const Flag& other)
+			{
+				if (mShortIdentifier == other.mShortIdentifier ||
+					std::strcmp(mLongIdentifier, other.mLongIdentifier) == 0)
+					return true;
 
-			return false;
-		}
+				return false;
+			}
+
+			bool operator!=(const Flag& other)
+			{
+				if (mShortIdentifier != other.mShortIdentifier &&
+					std::strcmp(mLongIdentifier, other.mLongIdentifier) != 0)
+					return true;
+
+				return false;
+			}
 	};
 
 	#ifndef STRUTIL_NULL_FLAG
-		constexpr Flag NULL_FLAG = {' ', "", "", nullptr};
+		constexpr Flag NULL_FLAG = {' ', "", "", 0, nullptr};
 	#endif 
 
 	class FlagParser
@@ -123,7 +136,6 @@ namespace SKUTIL
 
 			void ParseFlags(int argc, char** argv) 
 			{
-				int flagCount = 0;
 				for (int i = 1; i < argc; i++) {
 					Flag f = NULL_FLAG;
 					if (std::strncmp(argv[i], LONG_FLAG_DELIM, 2) == 0) {
@@ -147,20 +159,26 @@ namespace SKUTIL
 					if (f == NULL_FLAG)
 						continue;
 
-                    // IMPORTANT
-                    // right now, each flag assums only one argument will be passed
-                    // which means only one value can be associated to each flag and
-                    // cannot be specified otherwise, for example
-                    //
-                    // ./[app-name] -a 1 <- This works since flag 'a' only accepts value [1]
-                    // ./[app-name] -a 1 2 <- Does not work since flag 'a' is followed by [1] and [2]
-                    //
-                    // I would like to add this as a feature in the future to make the flag
-                    // parse more useful in a variety of use cases
-                    constexpr int ACCEPTABLE_FLAG_VALUE_COUNT {1};
-					f.mFunction(ACCEPTABLE_FLAG_VALUE_COUNT);
-					argv[i] = nullptr;
-					flagCount++;
+					// Get the respective values the flag wants as inputs
+					if (f.mExpectedValueCount > 0) {
+						f.mInputValues = new char*[f.mExpectedValueCount];
+						i++;
+
+						// I know loop in loop is bad but I really just want this flag parser to work for now
+						for (int valIdx = 0; valIdx < f.mExpectedValueCount; valIdx++) {
+							f.mInputValues[valIdx] = new char[SKUTIL_FLAG_VALUE_MAX_BUF_SIZE]; 
+							f.mInputValues[valIdx] = argv[i + valIdx];
+						}
+
+						// After adding the values to the flag, the counter index for the next flag has to be set
+						i += f.mExpectedValueCount - 1;
+					}
+
+					// This DOES NOT care if the values are valid or not
+					// if say the flag expects 2 inputs and the user only passed 1
+					// the input it would assume is valid is the next flag which
+					// WILL cause potential issues
+					f.mFunction(f.mExpectedValueCount, f.mInputValues);
 				}
 
 				// FIXME
@@ -169,7 +187,6 @@ namespace SKUTIL
 				// for the time being 
 				//
 				// char** tmp = nullptr;
-				// RemoveNullStrs(argc, argv, &tmp);
 			}
 
 			~FlagParser()
@@ -178,18 +195,18 @@ namespace SKUTIL
 			}
 
 		private:
-            static void ShowHelp(OPT int count, ...)
+            static void ShowHelp(OPT int inputCount, OPT char** inputVals)
             {
                 std::cout << "Help\n";
             }
 
 			SK_VEC<Flag> RESV = SK_VEC<Flag> {
-				NULL_FLAG,
 				{
 					'h',
 					"help",
 					"Show help commands",
-				    ShowHelp
+					0,
+				    ShowHelp,
 				},
 			};
 
@@ -226,12 +243,10 @@ namespace SKUTIL
 					std::strcmp(longhand, NULL_FLAG.mLongIdentifier) == 0)
 					return;
 
-
 				for (Flag f : *mAllFlags) {
 					if (shorthand == f.mShortIdentifier ||
 						strcmp(longhand, f.mLongIdentifier) == 0) {
 						*outFlag = f;
-
 						return;
 					}
 				}	
@@ -254,6 +269,5 @@ namespace SKUTIL
 // Remove all pre-processor macros that don't need to be defined for other programs
 #undef SKUTIL_VECTOR 
 #undef SKUTIL_FLAG_TYPES
-#undef SKUTIL_FLAG_PARAM_LIST
 
 #endif // _SKUTIL_FLAG_PARSER_HPP
