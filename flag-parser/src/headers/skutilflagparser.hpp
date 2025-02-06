@@ -3,9 +3,7 @@
 #define _SKUTIL_FLAG_PARSER_HPP
 
 #include <vector>
-#include <array>
 #include <iostream>
-#include <functional>
 #include <cstring>
 
 namespace SKUTIL
@@ -63,8 +61,6 @@ namespace SKUTIL
 		// Set the size of the output buffer to the [buf] size minus the amount of nullptrs found
 		int outBufSize = initCount - nullptrCount();
 		*outBuf = new char*[outBufSize];
-		// std::cout << "Nullptr Count - " << nullptrCount() << std::endl;
-		// return;
 
 		for (int idx = 0, c = 0; c < outBufSize; idx++) {
 			if (buf[idx] != nullptr) {
