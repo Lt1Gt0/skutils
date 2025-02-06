@@ -1,3 +1,17 @@
+/* TODO
+ * - Flag chaining (short flags)
+ *   At some point the user should be able to chain flags together assuming that none of them require any input afterwards
+ *   so instead of typing 
+ *     -a -b -c
+ *   they could just type
+ *     -abc
+ *
+ * - Proper help printout
+ *   When the help flag is called, information about each flag that the parser contains should be printed
+ *   as well as information about its shorthand and longhand form, plus its description and argument count
+ */
+
+
 #pragma once
 #ifndef _SKUTIL_FLAG_PARSER_HPP
 #define _SKUTIL_FLAG_PARSER_HPP
@@ -193,7 +207,7 @@ namespace SKUTIL
 		private:
             static void ShowHelp(OPT int inputCount, OPT char** inputVals)
             {
-                std::cout << "Help\n";
+                std::cout << "TODO: unimplemented\n";
             }
 
 			SK_VEC<Flag> RESV = SK_VEC<Flag> {
